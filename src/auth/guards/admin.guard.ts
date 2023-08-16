@@ -5,6 +5,7 @@ import { UserDocument } from "src/user/user.model";
 @Injectable()
 export class OnlyAdminGuard implements CanActivate {
 	constructor(private reflector: Reflector){}
+	
 	canActivate(context: ExecutionContext): boolean {
 		const request = context.switchToHttp().getRequest<{user : UserDocument}>();
 

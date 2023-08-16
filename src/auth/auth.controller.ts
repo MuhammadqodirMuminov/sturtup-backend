@@ -11,21 +11,21 @@ export class AuthController {
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('register')
-	async register(@Body() dto : RegisterAuthDto) {
-		return await this.authService.register(dto)
+	async register(@Body() dto: RegisterAuthDto) {
+		return await this.authService.register(dto);
 	}
 
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('login')
-	async login(@Body() dto : LoginAuthDto) {
-		return await this.authService.login(dto)
+	async login(@Body() dto: LoginAuthDto) {
+		return await this.authService.login(dto);
 	}
 
-	@UsePipes( new ValidationPipe())
+	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('access')
-	async getnewTokens(@Body() dto : TokenDto) {
-		return await this.authService.getnewTokens(dto)
+	async getnewTokens(@Body() dto: TokenDto) {
+		return await this.authService.getnewTokens(dto);
 	}
 }

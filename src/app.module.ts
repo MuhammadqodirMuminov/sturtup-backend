@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { getMongoDbConfig } from './config/mongo.config';
 import { CourseModule } from './course/course.module';
+import { MailModule } from './mail/mail.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -11,6 +12,6 @@ import { UserModule } from './user/user.module';
   imports : [ConfigModule],
   inject : [ConfigService],
   useFactory : getMongoDbConfig
-  }) , AuthModule, CourseModule, UserModule]
+  }) , AuthModule, CourseModule, UserModule, MailModule]
 })
 export class AppModule {}

@@ -8,17 +8,20 @@ import { User, UserDocument } from "src/user/user.model";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-	constructor(private readonly configService : ConfigService, @InjectModel(User.name) private userModel: Model<UserDocument>){
-		super({
-			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-			IgnoreExpiration : true,
-			secretOrKey : configService.get<string>('SECRET_JWT')
-		})
-	}
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      IgnoreExpiration: true,
+      secretOrKey: configService.get<string>("SECRET_JWT"),
+    });
+  }
 
-	async validate({_id}: Pick<UserDocument, '_id'>){
-		const user = await this.userModel.findById(_id);
+  async validate({ _id }: Pick<UserDocument, "_id">) {
+    const user = await this.userModel.findById(_id);
 
-		return user;
-	}
+    return user;
+  }
 }
