@@ -5,7 +5,7 @@ export type OtpDocument = HydratedDocument<Otp>
 
 @Schema({ timestamps: true, versionKey: false })
 export class Otp {
-	@Prop({ unique: true, required: true })
+	@Prop({  required: true })
 	email: string;
 
 	@Prop()

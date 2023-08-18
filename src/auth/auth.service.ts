@@ -17,10 +17,7 @@ export class AuthService {
 	) { }
 
 	async register(dto: RegisterAuthDto) {
-		const existUser = await this.isExistUser(dto.email);
-		if (existUser) {
-			throw new BadRequestException('User with that email already exists');
-		}
+
 
 		const salt = await genSalt(10);
 		const hashedPassword = await hash(dto.password, salt);

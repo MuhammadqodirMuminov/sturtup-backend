@@ -20,9 +20,6 @@ export class MailService {
   async sendOtpVerification(email: string) {
     if (!email) throw new ForbiddenException("Email is required.");
 
-    const existUser = await this.userModel.findOne({ email });
-    if (!existUser) throw new ForbiddenException("User not found !");
-
     const otp = Math.floor(100000 + Math.random() * 900000);
 
     const salt = await genSalt(10);
@@ -41,28 +38,29 @@ export class MailService {
       otp: hashedOtp,
       exporeAt: Date.now() + 3600000,
     });
-		
+
     const transport = await SendGrid.send(emailData);
-    return newOtp;
+    return "Success";
   }
 
   async verifyOtp(email: string, otpVerification: string) {
-    const user = await this.userModel.findOne({ email });
-    if (!user) throw new BadRequestException("User not found.");
-
     const existUserOtp = await this.otpModel.find({ email });
-    const { exporeAt, otp } = existUserOtp.slice(-1)[0];
 
-    if (exporeAt < new Date()) {
+    if (existUserOtp?.slice(-1)[0]?.exporeAt) {
+      const { exporeAt, otp } = existUserOtp?.slice(-1)[0];
+
+      if (exporeAt < new Date()) {
+        await this.otpModel.deleteMany({ email });
+        throw new BadRequestException("Your code is expired.");
+      }
+      const validOtp = await compare(otpVerification, otp);
+      if (!validOtp)
+        throw new BadRequestException(
+          "Your code is not valid. please check your email or try again",
+        );
+
       await this.otpModel.deleteMany({ email });
-      throw new BadRequestException("Your code is expired.");
+      return "Success";
     }
-
-    const validOtp = await compare(otpVerification, otp);
-    if (!validOtp)
-      throw new BadRequestException("Your code is not valid. please check your email or try again");
-
-    await this.otpModel.deleteMany({ email });
-    return "Success.";
   }
 }
