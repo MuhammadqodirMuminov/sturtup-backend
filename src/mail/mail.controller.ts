@@ -1,13 +1,14 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { MailService } from "./mail.service";
+import { SendOtpDto } from "./dto/senOtpDto";
 
 @Controller("mail")
 export class MailController {
   constructor(private readonly mailService: MailService) {}
 
   @Post("send-otp")
-  async sendOtp(@Body() dto: { email: string }) {
-    return this.mailService.sendOtpVerification(dto.email);
+  async sendOtp(@Body() dto: SendOtpDto) {
+    return this.mailService.sendOtpVerification(dto.email, dto.isRegistered);
   }
 
   @Post("verify-otp")
