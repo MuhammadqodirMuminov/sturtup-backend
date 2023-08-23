@@ -1,86 +1,98 @@
 /* eslint-disable prettier/prettier */
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { compare, genSalt, hash } from 'bcryptjs';
-import { Model } from 'mongoose';
-import { User, UserDocument } from 'src/user/user.model';
-import { LoginAuthDto } from './dto/login.dto';
-import { RegisterAuthDto } from './dto/register.dto'
-import { TokenDto } from './dto/token.dto';
+import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { InjectModel } from "@nestjs/mongoose";
+import { compare, genSalt, hash } from "bcryptjs";
+import { Model } from "mongoose";
+import { User, UserDocument } from "src/user/user.model";
+import { LoginAuthDto } from "./dto/login.dto";
+import { RegisterAuthDto } from "./dto/register.dto";
+import { TokenDto } from "./dto/token.dto";
 
 @Injectable()
 export class AuthService {
-	constructor(
-		@InjectModel(User.name) private userModel: Model<UserDocument>,
-		private readonly jwtService: JwtService,
-	) { }
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly jwtService: JwtService,
+  ) {}
 
-	async register(dto: RegisterAuthDto) {
+  async register(dto: RegisterAuthDto) {
+    const salt = await genSalt(10);
+    const hashedPassword = await hash(dto.password, salt);
 
+    const newUser = await this.userModel.create({
+      ...dto,
+      password: dto.password.length ? hashedPassword : '',
+    });
 
-		const salt = await genSalt(10);
-		const hashedPassword = await hash(dto.password, salt);
+    const token = await this.issueTokenPair(String(newUser._id));
 
-		const newUser = await this.userModel.create({ ...dto, password: hashedPassword });
+    newUser.save();
+    return { user: this.getUserField(newUser), ...token };
+  }
 
-		const token = await this.issueTokenPair(String(newUser._id));
+  async login(dto: LoginAuthDto) {
+    const existUser = await this.isExistUser(dto.email);
+    if (!existUser) {
+      throw new BadRequestException("User not found");
+    }
 
-		newUser.save();
-		return { user: this.getUserField(newUser), ...token }
-	}
+ 
+    if (dto.password.length) {
+      const currentPassword = await compare(dto.password, existUser.password);
+      if (!currentPassword) throw new BadRequestException('Incorrect password');
+    }
 
-	async login(dto: LoginAuthDto) {
-		const existUser = await this.isExistUser(dto.email);
-		if (!existUser) {
-			throw new BadRequestException('User not found');
-		}
+    const token = await this.issueTokenPair(String(existUser._id));
 
-		const currentPassword = await compare(dto.password, existUser.password);
-		if (!currentPassword) {
-			throw new BadRequestException('password does not much.');
-		}
+    return { user: this.getUserField(existUser), ...token };
+  }
 
-		const token = await this.issueTokenPair(String(existUser._id));
+  async getnewTokens({ refreshToken }: TokenDto) {
+    if (!refreshToken) throw new UnauthorizedException("Token is required.");
 
-		return { user: this.getUserField(existUser), ...token };
-	}
+    const checkToken = await this.jwtService.verifyAsync(refreshToken);
 
-	async getnewTokens({ refreshToken }: TokenDto) {
-		if (!refreshToken) throw new UnauthorizedException('Token is required.');
+    if (!checkToken) throw new UnauthorizedException("Invalid token or expired.");
 
-		const checkToken = await this.jwtService.verifyAsync(refreshToken);
+    const user = await this.userModel.findById(checkToken._id);
 
-		if (!checkToken) throw new UnauthorizedException('Invalid token or expired.');
+    const token = await this.issueTokenPair(String(user._id));
 
-		const user = await this.userModel.findById(checkToken._id);
+    return { user: this.getUserField(user), ...token };
+  }
 
-		const token = await this.issueTokenPair(String(user._id));
+  async checkUser(email: string) {
+    const user = await this.isExistUser(email);
 
-		return { user: this.getUserField(user), ...token };
-	}
+    if (user) {
+      return "user";
+    } else {
+      return "no-user";
+    }
+  }
 
-	async isExistUser(email: string): Promise<UserDocument> {
-		const existUser = await this.userModel.findOne({ email });
-		return existUser;
-	}
+  async isExistUser(email: string): Promise<UserDocument> {
+    const existUser = await this.userModel.findOne({ email });
+    return existUser;
+  }
 
-	async issueTokenPair(userId: string) {
-		const data = { _id: userId };
+  async issueTokenPair(userId: string) {
+    const data = { _id: userId };
 
-		const refreshToken = await this.jwtService.signAsync(data, { expiresIn: '15d' });
+    const refreshToken = await this.jwtService.signAsync(data, { expiresIn: "15d" });
 
-		const accessToken = await this.jwtService.signAsync(data, { expiresIn: '1h' });
+    const accessToken = await this.jwtService.signAsync(data, { expiresIn: "1h" });
 
-		return { accessToken, refreshToken };
-	}
+    return { accessToken, refreshToken };
+  }
 
-	getUserField(user: UserDocument) {
-		return {
-			id: user._id,
-			email: user.email,
-			passpord: user.password,
-			fullname: user.fullname,
-		};
-	}
+  getUserField(user: UserDocument) {
+    return {
+      id: user._id,
+      email: user.email,
+      passpord: user.password,
+      fullname: user.fullname,
+    };
+  }
 }
